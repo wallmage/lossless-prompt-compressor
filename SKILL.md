@@ -123,6 +123,8 @@ struct UserProfile fields: name (String), email (String), role (Role enum: admin
 Preserve: all field names, types, annotations, enum values, import statements, class/protocol names.
 Remove: syntactic scaffolding (braces, indentation, decorative comments).
 
+Exception: whitespace-semantic languages (Python, YAML, Makefile) — preserve these code blocks verbatim in Pass 2. See Edge Cases for details.
+
 ### 5. Compress JSON Config Blocks
 
 Same principle as code blocks. Replace full JSON examples with compact schema descriptions.
@@ -260,9 +262,7 @@ When compressing (not removing), the pattern is: keep WHAT and WHY, remove HOW-f
 
 ## Pass 4: Ultra-Dry Telegram Compression (optional, requires explicit user permission)
 
-Pass 4 is fundamentally different from Passes 1-3. Instead of surgically editing sections, Pass 4 rewrites the entire document top to bottom in telegram-style shorthand optimized for AI consumption. No information is deleted — every fact, spec, number, relationship, and cross-reference survives — but the writing style becomes radically compressed.
-
-This pass is designed for documents where the human will never read the compressed version directly. The AI is the sole consumer. If the user might also reference the compressed version, stop at Pass 3.
+Pass 4 rewrites the entire document top to bottom in telegram-style shorthand. Unlike Passes 1-3 (surgical edits), this is a full rewrite. Only for documents where the AI is the sole consumer — if the user might also reference the compressed version, stop at Pass 3.
 
 ### When to Offer Pass 4
 
@@ -377,6 +377,7 @@ When compressing, if a fragment could be parsed two ways, add 1-2 words to disam
 - **Non-English prompts:** Word count is approximate for CJK languages. Report character count alongside word count. Compression techniques still apply — bridge phrases, redundancy, and motivational prose exist in every language.
 - **Embedded URLs and file paths:** Default to keeping ALL URLs and file paths intact. In system prompts, these are almost always critical (API endpoints, config locations, documentation references). Only strip the Markdown link syntax `[text](url)`, never the URL itself.
 - **Pass skipping:** Pass 1 is always required. Passes 2, 3, and 4 can each be skipped independently. If the user says "skip to Pass 4," apply Pass 1 first, then Pass 4.
+- **Mixed-language documents:** Many system prompts mix English prose with non-English content (CJK product names, localization strings, multilingual examples). Preserve non-English content verbatim — compress the English scaffolding around it, not the embedded content itself.
 - **Rollback:** Keep a backup before each pass. If the user wants to undo a pass, restore from the previous backup rather than trying to reverse individual edits.
 
 ## Execution Workflow
@@ -406,11 +407,13 @@ Read the entire document. For each optimization opportunity, note:
 - What you'd change
 - Estimated word savings
 
-Present as a numbered list:
+Present as a numbered list, grouped by type for easy review:
 1. [Dedup] S6 pricing "3% of monthly revenue" repeated in 4 locations.
    Keep canonical in S6, replace others with "per S6". Saves ~40 words.
 2. [Code compress] S8.7.1 struct definition (28 lines).
    Replace with 2-line inline description. Saves ~150 words.
+
+On large documents (30+ proposals), batch into groups of 5-10 by type so the user can approve categories at a time rather than individually.
 
 ### Step 5: Get User Approval for Pass 2
 
@@ -443,11 +446,7 @@ Apply all approved items. Re-measure.
 
 ### Step 10: Offer Pass 4 (Optional)
 
-After reporting Pass 3 results, offer Pass 4:
-
-"Want me to apply Pass 4 — ultra-dry telegram compression? This rewrites everything in shorthand fragments for AI-only consumption. Typically saves an additional 25-40% on top of Pass 1-3. The result won't be pleasant to read as a human, but any modern LLM parses it identically. I'll keep a backup of the Pass 3 version in case you want to revert."
-
-If the user declines, stop. Only proceed with explicit confirmation.
+After reporting Pass 3 results, offer Pass 4 per the "When to Offer Pass 4" section above. Only proceed with explicit user confirmation.
 
 ### Step 11: Apply Pass 4 (if approved)
 
@@ -497,7 +496,6 @@ Typical compression ratios on product specs and master plans:
 - Pass 4 (ultra-dry telegram rewrite): additional 25-40% on top of Pass 1-3
 - Total (all 4 passes): 50-65% reduction
 
-On a 35,000-word document, Passes 1-3 save 10,000-17,000 words. Adding Pass 4 can bring the total down to 12,000-17,000 words — a 50-65% reduction, translating to roughly 25,000-32,000 fewer tokens per API call. At scale, this is major cost savings and allows fitting much longer documents into context windows.
 
 ## Compatibility
 
