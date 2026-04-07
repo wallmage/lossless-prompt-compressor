@@ -5,16 +5,14 @@ description: Lossless compression for large system prompts, master plans, produc
 
 # Lossless Prompt Compressor
 
-Compress large system prompts to minimize token cost while preserving every piece of information that an AI coding assistant actually needs. Works with any LLM — Claude, GPT, Codex, Gemini, Llama, Mistral, or any model that consumes system prompts.
+Compress large system prompts to minimize token cost while preserving every piece of information that an AI assistant actually needs.
 
 Four-pass process with increasing aggressiveness:
 
 - Pass 1: Mechanical (automatic, truly lossless) — strips formatting overhead
 - Pass 2: Creative (requires approval, truly lossless) — compresses verbose sections while keeping every fact
-- Pass 3: High-fidelity (requires approval, lossy for humans only) — removes content that only serves human readers and has zero impact on AI work quality
-- Pass 4: Ultra-dry telegram (optional, requires explicit user permission) — rewrites the entire document in telegram-style fragments for AI-only consumption, targeting maximum compression while preserving all facts and precision
-
-Think of it as four levels: Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 removes the instruction manual only a human would read. Pass 4 converts everything to shorthand — every word earns its place or it's gone.
+- Pass 3: High-fidelity (optional, requires approval, lossy for humans only) — removes content that only serves human readers
+- Pass 4: Ultra-dry telegram (optional, requires explicit permission) — rewrites everything in telegram-style fragments for AI-only consumption
 
 ## When to Use
 
@@ -84,7 +82,7 @@ Fast and purposeful; Physics-based; Confirm, don't decorate
 
 ### 2. Verify Zero Markdown Remains
 
-After stripping, search the entire document for any remaining Markdown syntax. Common survivors: stray **, leftover # at line starts, pipe | from unconverted tables, backticks around inline code.
+After stripping, search the entire document for any remaining Markdown syntax. Common survivors: stray **, leftover # at line starts, pipe | from unconverted tables, backticks around inline code. Exclude content inside preserved code blocks — Python comments (#), shell pipes (|), and inline code references are legitimate content, not Markdown survivors.
 
 ## Pass 2: Creative Compression (requires user approval)
 
@@ -213,7 +211,7 @@ Compress day-by-day breakdowns into weekly summaries. Keep: feature names, techn
 
 Compress to the actionable core only. If there is no actionable core, remove entirely.
 
-Note: Technique 7 (Pass 2) compresses motivational blocks that contain useful facts buried in prose. Technique 14 (Pass 3) removes motivational content that has zero factual content. Decision rule: if the block contains spec facts, numbers, or technical rationale — compress in Pass 2. If it's pure emotional support — remove in Pass 3.
+Note: Technique 7 (Pass 2) compresses motivational blocks whose primary purpose is factual — spec facts, numbers, or technical rationale buried in motivational prose. Technique 14 (Pass 3) removes blocks whose primary purpose is emotional support. For mixed blocks (90% motivation with one incidental fact): extract the fact into the nearest relevant section, then remove the motivational block in Pass 3.
 
 #### 15. Validation Tables and Checklists Already Implied by Specs
 
@@ -262,7 +260,7 @@ When compressing (not removing), the pattern is: keep WHAT and WHY, remove HOW-f
 
 ## Pass 4: Ultra-Dry Telegram Compression (optional, requires explicit user permission)
 
-Pass 4 rewrites the entire document top to bottom in telegram-style shorthand. Unlike Passes 1-3 (surgical edits), this is a full rewrite. Only for documents where the AI is the sole consumer — if the user might also reference the compressed version, stop at Pass 3.
+Pass 4 rewrites the entire document top to bottom in telegram-style shorthand. Unlike Passes 1-3 (surgical, section-by-section edits), this is a full rewrite. Only for documents where the AI is the sole consumer — if the user might also reference the compressed version, stop at Pass 3.
 
 ### When to Offer Pass 4
 
@@ -349,7 +347,7 @@ Search: search bar with real-time filter; cards show title/preview/relevance."
 
 ### Pass 4 Execution
 
-Unlike Passes 2-3 (surgical edits), Pass 4 is a full document rewrite:
+Pass 4 is a full document rewrite (not section-by-section like earlier passes):
 
 1. Read the entire post-Pass-3 document to understand all content and cross-references.
 2. Rewrite section by section, applying all telegram techniques simultaneously.
@@ -477,13 +475,13 @@ Run final verification:
 2. Never touch section/subsection numbering. Section numbers are cross-reference anchors, not formatting. When deleting sections in Pass 2/3, keep original numbering — never renumber.
 3. Preserve all blank lines between sections. They cost almost nothing and help AI attention.
 4. Don't reorder sections. The document's structure is intentional. Compress in-place.
-5. Don't use lossy abbreviations like "dev" for "development" — these save 3-4 characters but reduce clarity.
+5. In Passes 1-3, don't use lossy abbreviations like "dev" for "development" — these save 3-4 characters but reduce clarity. Pass 4 permits shorthand and fragment-style compression that would be inappropriate in earlier passes.
 6. Pass 1 is automatic. Pass 2 and 3 require approval. Always present proposals and wait for per-item approval.
 7. Pass 4 requires explicit user permission. Never apply without the user clearly saying yes.
 8. Work section by section. Systematic work catches more and makes fewer mistakes.
 9. Measure at every stage. Report word count reduction with percentages after each pass.
 10. Pass 3 is optional. If the user only wants truly lossless compression, stop after Pass 2.
-11. Pass 4 is optional. Only offer after Pass 3 is complete. Always back up pre-Pass-4 version.
+11. Pass 4 is optional. By default, offer after Pass 3 is complete. If the user requests skipping passes, follow Edge Cases guidance. Always back up pre-Pass-4 version.
 12. Precision over brevity in Pass 4. If a telegram fragment is ambiguous, add words to make it precise. Maximum compression at zero fidelity cost, not absolute minimum word count.
 
 ## Expected Results
