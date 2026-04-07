@@ -7,6 +7,8 @@ description: Lossless compression for large system prompts, master plans, produc
 
 Compress large system prompts to minimize token cost while preserving every piece of information that an AI assistant actually needs.
 
+Core loop: (1) Strip Markdown formatting, (2) deduplicate and compress verbose blocks with user approval, (3) optionally remove human-only content, (4) optionally rewrite as telegram fragments. Never delete spec facts. Never touch section numbers. Measure at every stage.
+
 Four-pass process with increasing aggressiveness:
 
 - Pass 1: Mechanical (automatic, truly lossless) — strips formatting overhead
@@ -23,7 +25,7 @@ Four-pass process with increasing aggressiveness:
 
 ## Philosophy
 
-The goal is NOT summarization. Summarization loses information that matters. This is compression — Pass 1 and 2 are truly lossless (every fact survives), while Pass 3 is "AI-lossless" (every fact the AI needs survives, but human-only content like coaching, tutorials, and motivational prose gets cut). Pass 4 goes further: it rewrites every surviving sentence into the most compact form a modern LLM can still parse with full fidelity — no full sentences needed, just precise fragments.
+The goal is NOT summarization. Summarization loses information that matters. This is compression. Pass 1 and 2 are truly lossless — every fact survives. Pass 3 is "AI-lossless": every fact the AI needs survives, but human-only content (coaching, tutorials, motivational prose) gets cut. Pass 4 rewrites every surviving sentence into the most compact form a modern LLM can still parse — fragments, not prose.
 
 The key distinction for Pass 3: if removing a section would cause the AI to produce worse code, worse architecture decisions, or miss a spec requirement — keep it intact. If removing it would only affect a human reader's experience (motivation, tutorials, step-by-step beginner guides) — propose cutting it.
 
@@ -53,11 +55,11 @@ Remove:
 - | table | pipe syntax (use semicolon-delimited inline format)
 - ``` code fences (strip the fence markers but preserve all code content verbatim — code compression happens in Pass 2, Technique 4)
 - > blockquote markers
-- --- horizontal rules
+- --- horizontal rules (NOT YAML frontmatter delimiters — if the document begins with `---`, preserve the frontmatter block intact)
 - Numbered list formatting (1. , 2. ) ONLY for inline lists — NEVER for section/subsection headers (see CAUTION above)
 - Link syntax [text](url) (keep just the URL or text, whichever is useful)
 
-Important: Preserve blank lines between sections and paragraphs. Blank lines cost ~1 token each but provide structural signal that helps AI parse sections and maintain attention across long prompts. Not worth removing.
+Important: Preserve blank lines between sections and paragraphs (see Rule 3).
 
 Convert tables to inline semicolon-delimited format:
 
@@ -266,13 +268,13 @@ Pass 4 rewrites the entire document top to bottom in telegram-style shorthand. U
 
 After completing Passes 1-3, if the user wants further compression, offer Pass 4 with this explanation:
 
-"Pass 4 rewrites everything in ultra-dry telegram style — fragments instead of sentences, no bridge phrases, maximum density. It typically cuts an additional 25-40% on top of Pass 1-3. The result reads like shorthand notes, not prose — but modern LLMs parse it with the same understanding as the original. Want me to proceed?"
+"Pass 4 rewrites everything in ultra-dry telegram style — fragments instead of sentences, no bridge phrases, maximum density. It typically cuts an additional 25-40% on top of Pass 1-3. The result reads like shorthand notes, not prose — but modern LLMs parse it with full fidelity. Want me to proceed?"
 
 Only apply Pass 4 after receiving explicit user confirmation.
 
 ### The Telegram Style
 
-Core principle: every word must carry information. If a word exists only to make text flow nicely for a human reader, it gets cut. LLMs reconstruct meaning from context and don't need grammatical scaffolding.
+Core principle: every word must carry information. If a word exists only to make text flow nicely for a human reader, it gets cut. LLMs reconstruct meaning from context without grammatical scaffolding.
 
 #### 18. Eliminate Bridge Phrases and Connective Tissue
 
@@ -374,8 +376,12 @@ When compressing, if a fragment could be parsed two ways, add 1-2 words to disam
 - **Already-compressed input:** Check for compression indicators: no Markdown, telegram-style fragments, semicolon-delimited lists. If the document looks pre-compressed, report diminishing returns and offer to spot-check rather than run full passes.
 - **Non-English prompts:** Word count is approximate for CJK languages. Report character count alongside word count. Compression techniques still apply — bridge phrases, redundancy, and motivational prose exist in every language.
 - **Embedded URLs and file paths:** Default to keeping ALL URLs and file paths intact. In system prompts, these are almost always critical (API endpoints, config locations, documentation references). Only strip the Markdown link syntax `[text](url)`, never the URL itself.
-- **Pass skipping:** Pass 1 is always required. Passes 2, 3, and 4 can each be skipped independently. If the user says "skip to Pass 4," apply Pass 1 first, then Pass 4.
+- **Pass skipping:** Pass 1 is always required. Passes 2, 3, and 4 can each be skipped independently. If the user says "skip to Pass N," always apply Pass 1 first (required), then jump to the requested pass.
 - **Mixed-language documents:** Many system prompts mix English prose with non-English content (CJK product names, localization strings, multilingual examples). Preserve non-English content verbatim — compress the English scaffolding around it, not the embedded content itself.
+- **Documents about Markdown itself:** If the input teaches or references Markdown syntax (e.g., a Markdown tutorial, a skill that instructs an AI to emit Markdown), treat literal Markdown syntax inside examples and instructional passages as semantic content. Only strip Markdown used for the document's own formatting.
+- **Non-Markdown uses of Markdown characters:** Hash in hex colors (#FF0000), asterisks in regex or glob patterns (*.txt), pipes in truth tables or shell commands — scan for these before stripping. If `#` is followed by a hex digit, `**` appears inside a regex/glob context, or `|` appears in non-table contexts (boolean expressions, shell pipes), preserve them. When uncertain, preserve.
+- **Creative writing or legal prose:** This skill is designed for AI instruction documents, not prose where specific word choices carry meaning. If the input is fiction, legal text, or similar, warn the user and offer Pass 1 only if they confirm.
+- **Very large documents (exceeding context window):** Process in chunks by top-level section. Apply Pass 1 to each chunk independently, then reassemble before Passes 2-4 (which need full-document context for deduplication). Warn the user that cross-chunk deduplication may be incomplete.
 - **Rollback:** Keep a backup before each pass. If the user wants to undo a pass, restore from the previous backup rather than trying to reverse individual edits.
 
 ## Execution Workflow
@@ -475,14 +481,13 @@ Run final verification:
 2. Never touch section/subsection numbering. Section numbers are cross-reference anchors, not formatting. When deleting sections in Pass 2/3, keep original numbering — never renumber.
 3. Preserve all blank lines between sections. They cost almost nothing and help AI attention.
 4. Don't reorder sections. The document's structure is intentional. Compress in-place.
-5. In Passes 1-3, don't use lossy abbreviations like "dev" for "development" — these save 3-4 characters but reduce clarity. Pass 4 permits shorthand and fragment-style compression that would be inappropriate in earlier passes.
+5. In Passes 1-3, don't use lossy abbreviations like "dev" for "development" — these save 3-4 characters but reduce clarity. Pass 4 permits fragment-style compression and common technical abbreviations (dev, config, auth, impl, etc.) that would be inappropriate in earlier passes.
 6. Pass 1 is automatic. Pass 2 and 3 require approval. Always present proposals and wait for per-item approval.
-7. Pass 4 requires explicit user permission. Never apply without the user clearly saying yes.
+7. Pass 4 requires explicit user permission. Never apply without the user clearly saying yes. By default, offer after Pass 3 is complete. If the user requests skipping passes, follow Edge Cases guidance. Always back up pre-Pass-4 version.
 8. Work section by section. Systematic work catches more and makes fewer mistakes.
-9. Measure at every stage. Report word count reduction with percentages after each pass.
+9. Measure at every stage. Report word count and estimated token reduction with percentages after each pass.
 10. Pass 3 is optional. If the user only wants truly lossless compression, stop after Pass 2.
-11. Pass 4 is optional. By default, offer after Pass 3 is complete. If the user requests skipping passes, follow Edge Cases guidance. Always back up pre-Pass-4 version.
-12. Precision over brevity in Pass 4. If a telegram fragment is ambiguous, add words to make it precise. Maximum compression at zero fidelity cost, not absolute minimum word count.
+11. Precision over brevity in Pass 4. If a telegram fragment is ambiguous, add words to make it precise. Maximum compression at zero fidelity cost, not absolute minimum word count.
 
 ## Expected Results
 
@@ -493,7 +498,6 @@ Typical compression ratios on product specs and master plans:
 - Pass 3 (high-fidelity, human-only removal): additional 15-25%
 - Pass 4 (ultra-dry telegram rewrite): additional 25-40% on top of Pass 1-3
 - Total (all 4 passes): 50-65% reduction
-
 
 ## Compatibility
 
