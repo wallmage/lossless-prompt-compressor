@@ -53,7 +53,7 @@ Remove:
 - **bold** and *italic* markers
 - - bullet markers (use semicolons or natural prose instead)
 - | table | pipe syntax (use semicolon-delimited inline format)
-- ``` code fences
+- ``` code fences (strip the fence markers but preserve all code content verbatim — code compression happens in Pass 2, Technique 4)
 - > blockquote markers
 - --- horizontal rules
 - Numbered list formatting (1. , 2. ) ONLY for inline lists — NEVER for section/subsection headers (see CAUTION above)
@@ -211,6 +211,8 @@ Compress day-by-day breakdowns into weekly summaries. Keep: feature names, techn
 
 Compress to the actionable core only. If there is no actionable core, remove entirely.
 
+Note: Technique 7 (Pass 2) compresses motivational blocks that contain useful facts buried in prose. Technique 14 (Pass 3) removes motivational content that has zero factual content. Decision rule: if the block contains spec facts, numbers, or technical rationale — compress in Pass 2. If it's pure emotional support — remove in Pass 3.
+
 #### 15. Validation Tables and Checklists Already Implied by Specs
 
 If the document has a table that validates every feature against design principles (and every feature passes), the table adds no information — features are already specified elsewhere.
@@ -367,11 +369,21 @@ Verify:
 
 When compressing, if a fragment could be parsed two ways, add 1-2 words to disambiguate. Precision always beats brevity.
 
+## Edge Cases
+
+- **Short documents (under 1,000 words):** Warn the user that compression savings will be minimal. Offer to proceed but set expectations — Pass 1 might save 50-100 words, Passes 2-3 may find nothing worth compressing.
+- **Code-heavy prompts (>50% code):** Technique 4 (code compression) should be more conservative. Preserve Python/YAML/Makefile code blocks verbatim — whitespace is semantic in these languages. Only compress code that uses braces/indentation for purely syntactic structure (Swift, JSON, TypeScript).
+- **Already-compressed input:** Check for compression indicators: no Markdown, telegram-style fragments, semicolon-delimited lists. If the document looks pre-compressed, report diminishing returns and offer to spot-check rather than run full passes.
+- **Non-English prompts:** Word count is approximate for CJK languages. Report character count alongside word count. Compression techniques still apply — bridge phrases, redundancy, and motivational prose exist in every language.
+- **Embedded URLs and file paths:** Default to keeping ALL URLs and file paths intact. In system prompts, these are almost always critical (API endpoints, config locations, documentation references). Only strip the Markdown link syntax `[text](url)`, never the URL itself.
+- **Pass skipping:** Pass 1 is always required. Passes 2, 3, and 4 can each be skipped independently. If the user says "skip to Pass 4," apply Pass 1 first, then Pass 4.
+- **Rollback:** Keep a backup before each pass. If the user wants to undo a pass, restore from the previous backup rather than trying to reverse individual edits.
+
 ## Execution Workflow
 
 ### Step 1: Baseline Measurement
 
-Before any edits, measure the starting document. Count lines, words, and characters (or tokens if a tokenizer is available). Save these numbers for reporting at each stage.
+Before any edits, measure the starting document. Count lines, words, and estimate tokens (rough heuristic: tokens ≈ words × 1.3 for English, × 2.5 for CJK). Save these numbers for reporting at each stage.
 
 ### Step 2: Copy to Working File
 
@@ -447,12 +459,12 @@ If the user declines, stop. Only proceed with explicit confirmation.
 
 Report a summary table:
 
-Stage; Words; Reduction
-Original; 37,237; -
-After Pass 1; 33,472; 10%
-After Pass 2; 31,126; 16%
-After Pass 3; 25,730; 31%
-After Pass 4; 16,200; 56%
+Stage; Words; Est. Tokens; Reduction
+Original; 37,237; ~48,400; -
+After Pass 1; 33,472; ~43,500; 10%
+After Pass 2; 31,126; ~40,500; 16%
+After Pass 3; 25,730; ~33,400; 31%
+After Pass 4; 16,200; ~21,100; 56%
 
 Run final verification:
 - Search for remaining Markdown syntax
@@ -489,17 +501,7 @@ On a 35,000-word document, Passes 1-3 save 10,000-17,000 words. Adding Pass 4 ca
 
 ## Compatibility
 
-This compressor produces output optimized for any modern LLM:
-- Claude (Opus, Sonnet, Haiku)
-- GPT (GPT-4, GPT-4o, o1, o3)
-- Codex
-- Gemini (Pro, Ultra, Flash)
-- Llama 3+
-- Mistral / Mixtral
-- DeepSeek
-- Any instruction-tuned model with 8K+ context
-
-The telegram-style output from Pass 4 has been tested to produce identical behavior across model families. All modern LLMs reconstruct meaning from context and handle semicolon-delimited fragments, arrow notation, and slash-separated options without degradation.
+Works with any modern instruction-tuned LLM with 8K+ context (Claude, GPT, Codex, Gemini, Llama, Mistral, DeepSeek, and others). The telegram-style output from Pass 4 produces identical behavior across model families — all modern LLMs handle semicolon-delimited fragments, arrow notation, and slash-separated options without degradation.
 
 Author: Wallny
 https://github.com/wallmage
