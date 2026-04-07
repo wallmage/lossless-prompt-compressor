@@ -1,41 +1,42 @@
 # Lossless Prompt Compressor
 
-4-pass compression for system prompts. 50-65% token reduction without losing a single fact. Works with any LLM.
+Compression for AI instruction docs, rule files, planning docs, and product specs.
 
-## What it does
+This is compression, not summarization: the skill preserves machine-relevant facts while cutting formatting overhead, redundancy, human-only scaffolding, and optionally rewriting into ultra-dense AI-only shorthand.
 
-Compresses large system prompts (CLAUDE.md, .cursorrules, master plans, product specs) to minimize token cost while preserving every piece of information the AI actually needs.
+## Modes
+
+- **Strict Lossless** (default): Pass 1 (mechanical cleanup) + approved Pass 2 edits (fact-preserving compression). Every fact survives. Document stays human-readable.
+- **AI-Lossless**: Pass 3 on top of Strict Lossless. Removes human-only content (tutorials, coaching, schedules) while preserving everything the AI needs.
+- **AI-Only**: Pass 4 on top of earlier passes. Full telegram-style rewrite for maximum density.
+
+## Workflow
 
 | Pass | Type | Approval | Typical reduction |
 |------|------|----------|-------------------|
-| 1 | Mechanical — strip Markdown formatting | Automatic | 10-25% |
-| 2 | Creative — deduplicate, compress code blocks | Per-item | +5-15% |
-| 3 | High-fidelity — remove human-only content | Per-item | +15-25% |
-| 4 | Ultra-dry telegram — rewrite for AI-only consumption | Explicit opt-in | +25-40% |
+| 1 | Mechanical cleanup | Automatic | 10-25% |
+| 2 | Fact-preserving compression | Per-item | +5-15% |
+| 3 | Human-only content removal | Per-item | +15-25% |
+| 4 | Telegram rewrite | Explicit opt-in | +25-40% |
 
-**Total: 50-65% reduction** on a typical 35,000-word document.
+Think of it as four levels: Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 removes the instruction manual only a human would read. Pass 4 converts everything to shorthand.
 
-## Philosophy
+## Design
 
-This is **compression**, not summarization. Passes 1-2 are truly lossless — every fact survives. Pass 3 is "AI-lossless" — human tutorials and motivation get cut, but every spec detail the AI needs stays intact. Pass 4 rewrites everything in telegram-style shorthand that any modern LLM parses identically.
+- Strict lossless by default — compression, not summarization
+- Section-number-safe — cross-reference anchors are never renumbered
+- Approval-gated — every non-mechanical edit requires user sign-off
+- 23 numbered techniques — full catalog in `references/techniques.md` with before/after examples
+- 12 edge cases — from code-heavy prompts to mixed-language documents
 
-## Compatibility
+## Structure
 
-Works with any modern LLM:
-- Claude (Opus, Sonnet, Haiku)
-- GPT (GPT-4, GPT-4o, o1, o3)
-- Codex
-- Gemini (Pro, Ultra, Flash)
-- Llama 3+
-- Mistral / Mixtral
-- DeepSeek
-- Any instruction-tuned model with 8K+ context
-
-## How to use
-
-1. Copy [`SKILL.md`](SKILL.md)
-2. Add it as a skill in Claude Code / Cowork, or paste as a system prompt in any LLM
-3. Give it a document and say "compress this"
+```
+lossless-prompt-compressor/
+├── SKILL.md              — Operating manual (~350 lines)
+└── references/
+    └── techniques.md     — Full technique catalog with examples
+```
 
 ## Author
 

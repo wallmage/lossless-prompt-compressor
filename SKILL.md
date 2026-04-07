@@ -1,78 +1,75 @@
 ---
 name: lossless-prompt-compressor
-description: Lossless compression for large system prompts, master plans, product specs, and coding instructions to reduce token cost for any AI assistant — Claude, GPT, Codex, Gemini, Llama, Mistral, or any LLM. Use this skill whenever the user wants to compress a system prompt, reduce token cost of a long document fed to AI, optimize a master plan for LLM context, shrink a spec document without losing information, or fit more into a context window. Also use when the user mentions "token savings", "system prompt optimization", "compress for AI", "context window", "reduce tokens", or "lossless compression". This is a 4-pass compressor — Pass 1 is automatic, Pass 2 and 3 require human approval, Pass 4 is an optional ultra-dry telegram-style rewrite for maximum compression (requires explicit user permission).
+description: "Compress AI instruction documents, rule files, planning docs, product specs, and operational manuals while preserving machine-relevant facts. Use when the user wants lower token cost, better context-window fit, prompt optimization, \"lossless compression\", \"reduce tokens\", \"compress for AI\", or similar. Default to Strict Lossless mode: Pass 1 automatic mechanical cleanup plus approval-gated Pass 2 fact-preserving compression. Only enter AI-Lossless Pass 3 or AI-Only Pass 4 when the user explicitly wants more aggressive compression."
 ---
 
 # Lossless Prompt Compressor
 
-Compress large system prompts to minimize token cost while preserving every piece of information that an AI assistant actually needs.
+Compress AI-facing documents without deleting information the model needs to do good work.
 
-Core loop: (1) Strip Markdown formatting, (2) deduplicate and compress verbose blocks with user approval, (3) optionally remove human-only content, (4) optionally rewrite as telegram fragments. Never delete spec facts. Never touch section numbers. Measure at every stage.
+Four-pass process with increasing aggressiveness. Think of it as four levels: Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 removes the instruction manual only a human would read. Pass 4 converts everything to shorthand — every word earns its place or it's gone.
 
-Four-pass process with increasing aggressiveness:
+## Modes
 
-- Pass 1: Mechanical (automatic, truly lossless) — strips formatting overhead
-- Pass 2: Creative (requires approval, truly lossless) — compresses verbose sections while keeping every fact
-- Pass 3: High-fidelity (optional, requires approval, lossy for humans only) — removes content that only serves human readers
-- Pass 4: Ultra-dry telegram (optional, requires explicit permission) — rewrites everything in telegram-style fragments for AI-only consumption
+- Strict Lossless: Pass 1 plus approved Pass 2 edits. Preserve all facts and keep the document human-usable. This is the default.
+- AI-Lossless: Pass 3 on top of Strict Lossless. Remove or compress human-only scaffolding while preserving what the model needs.
+- AI-Only: Pass 4 on top of earlier passes. Rewrite for maximum density, not pleasant human reading.
+
+Do not move beyond Strict Lossless unless the user clearly wants more compression.
 
 ## When to Use
 
-- Long document (5K+ words) used as a system prompt or context for any AI assistant
-- Reducing API costs (tokens = money)
-- Fitting more content into a limited context window
-- The document is a product spec, master plan, coding guide, CLAUDE.md, .cursorrules, or similar reference material
+Use freely for: system prompts, AI coding guides, agent instruction files, product specs written for AI consumption, master plans, operating manuals, onboarding docs, or reference docs fed to an LLM.
 
-## Philosophy
+Warn before proceeding if:
+- The input is under 1,000 words and likely has limited savings.
+- The input already looks compressed.
+- The input is fiction, legal prose, or policy language where wording itself is the artifact.
+- The input is mostly executable code and the user expects code reuse rather than descriptive compression.
 
-The goal is NOT summarization. Summarization loses information that matters. This is compression. Pass 1 and 2 are truly lossless — every fact survives. Pass 3 is "AI-lossless": every fact the AI needs survives, but human-only content (coaching, tutorials, motivational prose) gets cut. Pass 4 rewrites every surviving sentence into the most compact form a modern LLM can still parse — fragments, not prose.
+For non-AI prose, offer Pass 1 only unless the user clearly confirms they still want deeper compression.
 
-The key distinction for Pass 3: if removing a section would cause the AI to produce worse code, worse architecture decisions, or miss a spec requirement — keep it intact. If removing it would only affect a human reader's experience (motivation, tutorials, step-by-step beginner guides) — propose cutting it.
+## Hard Preservation Rules
 
-The key distinction for Pass 4: no information is deleted. Every fact, spec, number, name, and relationship survives. The compression comes entirely from rewriting prose into dry, telegram-style fragments. The document becomes unpleasant for humans to read but functionally identical for AI consumption.
+1. Never renumber sections or subsections, even if sections are removed. Section numbers are cross-reference anchors ("see S8.7.3", "per S6"), not formatting.
+2. Never delete a fact just because it feels repetitive unless the same fact survives canonically elsewhere and the replacement clearly points back to it.
+3. Never strip URLs, file paths, identifiers, API names, class names, field names, enum values, version numbers, limits, percentages, or dates unless the user explicitly approves.
+4. Never treat literal Markdown examples as disposable formatting when the document teaches Markdown or contains syntax examples.
+5. Never compress whitespace-semantic code blocks (Python, YAML, Makefile) into prose unless the user explicitly asks for that tradeoff.
+6. Prefer keeping a few extra tokens over introducing ambiguity.
 
-## CAUTION: Preserve All Section and Subsection Numbering
+## Pass 1: Mechanical Compression (automatic)
 
-NEVER strip or modify section/subsection numbers. Numbers like "1. Product Positioning", "8.7.3 Rule-Based Pre-Router", "S16.1 Tech Stack" are structural identifiers, NOT Markdown list formatting. They serve as cross-reference anchors used throughout the document (e.g., "see S8.7.3", "per S6").
+These transformations never delete semantic content — safe to apply immediately.
 
-Rules:
-- When stripping Markdown numbered list formatting (1. , 2. ), distinguish between inline list items and section/subsection headers. Section headers have a number followed by a title on their own line.
-- When deleting entire sections in Pass 2/3, do NOT renumber the remaining sections. Keep original numbers intact so cross-references remain consistent with the original source.
-- Before applying Pass 1, scan the document for its numbering scheme. Catalog all section/subsection numbers. After Pass 1, verify every one survived.
+### What to Remove
 
-## Pass 1: Mechanical Compression (automatic, no approval needed)
+- `#`, `##`, `###` header markers (keep heading text and any section number)
+- `**bold**` and `*italic*` markers
+- `- ` bullet markers (use semicolons or natural prose instead)
+- `| table |` pipe syntax (convert to semicolon-delimited inline format)
+- ` ``` ` code fences (strip the fence markers, preserve all code content verbatim — code compression happens in Pass 2)
+- `> ` blockquote markers
+- `---` horizontal rules (NOT YAML frontmatter delimiters — if the document begins with `---`, preserve the frontmatter block intact)
+- Numbered list formatting (`1. `, `2. `) ONLY for inline lists — NEVER for section/subsection headers
+- Link syntax `[text](url)` (keep the URL or text, whichever is useful)
 
-These transformations are safe to apply immediately because they never delete semantic content.
+Keep blank lines between sections and paragraphs — they cost ~1 token each but provide structural signal that helps AI parse long prompts.
 
-### 1. Strip All Markdown Formatting
+### Key Examples
 
-System prompts don't need to be pretty — they need to be parseable. Remove all Markdown syntax that costs tokens but adds no information for the AI reader.
+Table conversion:
 
-Remove:
-- #, ##, ### header markers (replace with plain text section labels, keep any section number)
-- **bold** and *italic* markers
-- - bullet markers (use semicolons or natural prose instead)
-- | table | pipe syntax (use semicolon-delimited inline format)
-- ``` code fences (strip the fence markers but preserve all code content verbatim — code compression happens in Pass 2, Technique 4)
-- > blockquote markers
-- --- horizontal rules (NOT YAML frontmatter delimiters — if the document begins with `---`, preserve the frontmatter block intact)
-- Numbered list formatting (1. , 2. ) ONLY for inline lists — NEVER for section/subsection headers (see CAUTION above)
-- Link syntax [text](url) (keep just the URL or text, whichever is useful)
-
-Important: Preserve blank lines between sections and paragraphs (see Rule 3).
-
-Convert tables to inline semicolon-delimited format:
-
-Before (Markdown table):
+Before:
 | Platform | Framework | Language |
 |----------|-----------|----------|
 | iOS      | SwiftUI   | Swift    |
 
-After (plain text):
+After:
 Platform; Framework; Language
 iOS; SwiftUI; Swift
 
-Convert bullet lists to semicolon-separated inline text:
+Bullet list conversion:
 
 Before:
 - Fast and purposeful
@@ -82,17 +79,38 @@ Before:
 After:
 Fast and purposeful; Physics-based; Confirm, don't decorate
 
-### 2. Verify Zero Markdown Remains
+### Watch Closely
 
-After stripping, search the entire document for any remaining Markdown syntax. Common survivors: stray **, leftover # at line starts, pipe | from unconverted tables, backticks around inline code. Exclude content inside preserved code blocks — Python comments (#), shell pipes (|), and inline code references are legitimate content, not Markdown survivors.
+- Distinguish section numbering from list numbering. Section headers have a number followed by a title on their own line. Before Pass 1, catalog all section/subsection numbers. After Pass 1, verify every one survived.
+- Hash in hex colors (#FF0000), asterisks in regex or globs (*.txt), pipes in shell commands or truth tables — these are content, not Markdown. When uncertain, preserve.
+- Preserve YAML frontmatter if it exists at the top of the file.
+- Content inside preserved code blocks: Python comments (#), shell pipes (|), and inline code references are legitimate content, not Markdown survivors.
 
-## Pass 2: Creative Compression (requires user approval)
+### Pass 1 Reporting
 
-These transformations involve judgment. Always propose as a numbered list with estimated savings, and wait for per-item approval.
+After Pass 1, report:
+"Pass 1 complete: X words -> Y words (Z% reduction). All Markdown formatting removed. No content deleted."
 
-### 3. Cross-Reference Deduplication
+## Pass 2: Fact-Preserving Compression (requires approval)
 
-Find facts stated multiple times. State each fact once in its canonical location, then replace all others with a short cross-reference.
+These transformations involve judgment. Propose as a numbered list with estimated savings and wait for per-item approval.
+
+### Technique Categories
+
+- Deduplicate repeated facts: keep one canonical statement, replace others with cross-references
+- Compress code blocks to inline descriptions: preserve field names, types, and relationships
+- Compress JSON config blocks to compact schema descriptions
+- Cut version-specific breakdowns that duplicate a summary
+- Collapse long rationales to one sentence preserving the real reasons
+- Compress verbose use-case lists to one-liners per case
+- Replace ASCII mockups with compact layout descriptions
+- Compress motivational blocks that also contain real technical facts
+
+See [references/techniques.md](references/techniques.md) for the full technique catalog with before/after examples for each category.
+
+### Key Examples
+
+Cross-reference deduplication:
 
 Before (fact in 3 locations):
 Line 196: "cap total free-tier subsidies at 3% of monthly revenue"
@@ -103,13 +121,9 @@ After:
 Line 196: "cap total free-tier subsidies at 3% of monthly revenue" (canonical)
 Lines 542, 688: "Free-tier capped per S6" (compressed)
 
-How to find duplicates: search for key numbers, percentages, time durations, and branded terms that appear more than once. Common culprits: pricing figures, performance targets, time limits, feature names repeated in overview + detail sections.
+Code block compression:
 
-### 4. Compress Code Blocks to Inline Descriptions
-
-Code samples in system prompts are reference material, not executable code. The AI doesn't copy-paste from the system prompt — it uses the information to guide its own code generation. Replace code blocks with compact natural-language descriptions preserving all field names, types, and relationships.
-
-Before (20+ lines of code):
+Before (20+ lines):
 struct UserProfile {
     var name: String
     var email: String
@@ -120,70 +134,47 @@ struct UserProfile {
 After (2 lines):
 struct UserProfile fields: name (String), email (String), role (Role enum: admin/editor/viewer), createdAt (Date).
 
-Preserve: all field names, types, annotations, enum values, import statements, class/protocol names.
-Remove: syntactic scaffolding (braces, indentation, decorative comments).
+Exception: whitespace-semantic languages (Python, YAML, Makefile) — preserve verbatim.
 
-Exception: whitespace-semantic languages (Python, YAML, Makefile) — preserve these code blocks verbatim in Pass 2. See Edge Cases for details.
+### Validation Criteria
 
-### 5. Compress JSON Config Blocks
+Approve a Pass 2 item only if all of these remain true:
+- Every fact still exists.
+- The AI could make the same coding and architecture decisions after the edit.
+- The rewrite is not ambiguous.
+- A human could still trace the fact back to its canonical section.
 
-Same principle as code blocks. Replace full JSON examples with compact schema descriptions.
+If any are uncertain, keep the original.
 
-Before (30+ lines of JSON):
-{ "version": "1.0", "regions": [ { "region": "CN", "providers": [...] } ] ... }
+### Proposal Format
 
-After (1 paragraph):
-Provider config: JSON with version, updated date, regions array. Each region: region code (CN/US/EU), strategy ("direct"/"aggregator"), providers array (name, endpoint, priority, max_latency_ms, cost_per_1k_tokens), fallback_timeout_ms.
+```text
+1. [Dedup] S6, lines 542 and 688
+   Original: two repeated statements of the same subsidy cap.
+   Replacement: "Free-tier subsidy cap: per S6."
+   Reason: canonical fact already exists in S6; removes duplication only.
+   Est. savings: ~40 words. Risk: low.
+```
 
-### 6. Cut Version-Specific Breakdowns That Duplicate a Summary
+On large documents (30+ proposals), batch into groups of 5-10 by type for easier review.
 
-If the document has both a summary table AND a per-version detailed breakdown covering the same information, propose cutting the detail and keeping the summary. If any information in the detail ISN'T in the summary, compress to 1-2 lines and append.
+## Pass 3: High-Fidelity Compression (optional, requires approval)
 
-### 7. Summarize "Why This Matters" / Motivational Blocks
+Pass 3 removes or sharply compresses material that helps human readers but does not improve model output. The key question: "If I remove this, will the AI produce worse code or miss a spec requirement?" If no — it's a candidate.
 
-Product specs often include motivational explanations. Compress each to 1-2 sentences preserving the core insight:
+### Typical Targets
 
-Before (6 lines): Why This Must Be Right From Day One: We need multi-region
-support because the Great Firewall blocks all US providers. At maturity the
-router manages 20-30 endpoints... (lengthy justification)
+- Beginner tutorials and tool installation guides
+- Practice prompts and learning exercises
+- Day-by-day schedules, wake/sleep routines
+- Coaching and motivational content
+- Validation matrices that only confirm what specs already say
+- Competitive comparison tables that add positioning but no implementation guidance
+- Step-by-step workflow examples for humans
 
-After (2 lines): Why day one: GFW blocks US providers; at maturity router
-manages 20-30 endpoints for 100+ countries; 2x cost difference at scale =
-profit vs loss.
+### Key Example
 
-### 8. Compress Design Decision Rationales
-
-Design decisions often include 3-4 paragraphs of reasoning where 1 sentence with key reasons suffices.
-
-### 9. Compress Verbose Use Case Lists
-
-When the document lists 5+ detailed use cases, compress each to a one-liner. The AI needs the pattern, not full paragraphs per use case.
-
-### 10. Compress ASCII Art / UI Mockups
-
-ASCII mockups cost many tokens. Replace with compact text descriptions that capture layout, key elements, and any spec requirements embedded in the visual.
-
-Before (10-line ASCII UI mockup):
-+---------------------+
-|  Welcome!           |
-|  Your data matters. |
-|  [Got it]           |
-+---------------------+
-
-After (1 line):
-Welcome screen: "Your data matters" message with [Got it] button.
-
-## Pass 3: High-Fidelity Compression (requires user approval)
-
-Pass 3 targets content that exists to serve a human reader but has zero impact on AI coding quality. The key question for every section: "If I remove this, will the AI produce worse code or miss a spec requirement?" If no — it's a candidate.
-
-This pass is more aggressive and can achieve an additional 15-25% reduction on top of Pass 1+2. Always propose as a numbered list.
-
-### What to Look For
-
-#### 11. Beginner Tutorials and Tool Installation Guides
-
-Step-by-step instructions for installing tools, creating accounts, or learning IDEs. The AI doesn't need to know how to install software.
+Tutorial compression:
 
 Before (800 words):
 Day -2 — Tool Installation
@@ -197,99 +188,64 @@ coding tools, API keys, version control, analytics.
 
 The compressed version preserves WHAT needs to be installed but removes HOW (human-only tutorial).
 
-#### 12. Practice Prompts and Learning Exercises
+### Decision Test
 
-Prompts designed to help a beginner learn tools ("Try this practice prompt..."). The AI doesn't need someone else's practice exercises.
+For each candidate, ask:
+1. Does it contain a requirement, constraint, field, number, or architecture decision? Keep the useful content.
+2. Would removing it make the AI produce worse code, plans, or miss a spec? Keep it.
+3. Is the remaining value mostly emotional support, tutorial scaffolding, or human scheduling? Propose removal or heavy compression.
 
-#### 13. Day-by-Day Scheduling and Human Routines
+When compressing (not removing), keep WHAT and WHY. Remove HOW-for-humans.
 
-Detailed schedules with wake-up times, breaks, and sleep times. The AI needs to know WHAT gets built each phase and any technical details, not WHEN the human eats dinner.
+### Pass 2 vs Pass 3 Boundary
 
-Compress day-by-day breakdowns into weekly summaries. Keep: feature names, technical requirements, key implementation details. Remove: time blocks, motivational pep talks, "commit message" suggestions, rest day descriptions.
+Pass 2 compresses motivational blocks whose primary purpose is factual — spec facts, numbers, or technical rationale buried in motivational prose. Pass 3 removes blocks whose primary purpose is emotional support. For mixed blocks (90% motivation with one incidental fact): extract the fact into the nearest relevant section, then remove the block in Pass 3.
 
-#### 14. Coaching and Motivational Content
+### Proposal Format
 
-"Don't panic," "Celebrate!", "Don't get discouraged" — these support a human's emotional state but have no impact on AI output quality.
+```text
+1. [Tutorial] S2.4 Tool setup
+   Action: COMPRESS
+   Original: installation walkthrough plus encouragement text.
+   Replacement: keep required tools and accounts; remove step-by-step guidance.
+   Reason: preserves implementation prerequisites while removing tutorial scaffolding.
+   Est. savings: ~220 words.
+```
 
-Compress to the actionable core only. If there is no actionable core, remove entirely.
+Use `REMOVE` only when the section is genuinely human-only.
 
-Note: Technique 7 (Pass 2) compresses motivational blocks whose primary purpose is factual — spec facts, numbers, or technical rationale buried in motivational prose. Technique 14 (Pass 3) removes blocks whose primary purpose is emotional support. For mixed blocks (90% motivation with one incidental fact): extract the fact into the nearest relevant section, then remove the motivational block in Pass 3.
-
-#### 15. Validation Tables and Checklists Already Implied by Specs
-
-If the document has a table that validates every feature against design principles (and every feature passes), the table adds no information — features are already specified elsewhere.
-
-Before (30-row validation table):
-Feature; Criteria 1; Criteria 2; Score; Verdict
-Feature A; YES; YES; 6/6; SHIP
-Feature B; YES; YES; 5/6; SHIP
-... (26 more rows all saying SHIP)
-
-After (2 lines):
-All 26 features passed the Design Principles Checklist.
-Every feature scores YES on all Tier 1 and >=4/6 Tier 2. Verdict: SHIP all.
-
-#### 16. Competitive Comparison Tables (Motivational)
-
-"We win on every dimension" tables motivate the human builder but the AI builds features based on specs, not competitive positioning.
-
-Compress to 1-2 lines capturing the competitive stance, or remove if specs already define what to build.
-
-#### 17. Step-by-Step Workflow Examples for Humans
-
-Minute-by-minute examples of "what your day looks like" — meant to teach a human the workflow rhythm. The AI doesn't follow a daily schedule.
-
-Before (800 words):
-11:00am: Wake up. Coffee.
-12:00pm: Open document. Read the goals.
-12:15pm: Open AI tool. Ask for guidance...
-
-After (2 lines):
-Daily pattern: read goals -> get AI guidance -> write code -> build -> fix
-errors -> test -> commit. Build every 30min, commit every 2hr max.
-
-### Pass 3 Decision Framework
-
-For each candidate section, ask three questions:
-
-1. Does this contain spec facts? (feature requirements, field names, API details, architecture decisions, data models, enum values, performance targets) -> If yes, keep the facts even if you compress surrounding prose.
-
-2. Does this affect AI code generation quality? (coding patterns, architectural constraints, error handling requirements, naming conventions) -> If yes, keep it.
-
-3. Is this purely for human consumption? (installation tutorials, emotional support, scheduling, practice exercises, motivational comparisons, validation that confirms what specs already say) -> If yes, propose removal or heavy compression.
-
-When compressing (not removing), the pattern is: keep WHAT and WHY, remove HOW-for-humans. "Install IDE, AI tools, API keys" (what) is useful context. "Open the app store, click search, type the name, wait 30 minutes" (how-for-humans) is not.
-
-## Pass 4: Ultra-Dry Telegram Compression (optional, requires explicit user permission)
+## Pass 4: Telegram Rewrite (optional, requires explicit permission)
 
 Pass 4 rewrites the entire document top to bottom in telegram-style shorthand. Unlike Passes 1-3 (surgical, section-by-section edits), this is a full rewrite. Only for documents where the AI is the sole consumer — if the user might also reference the compressed version, stop at Pass 3.
 
-### When to Offer Pass 4
+### When to Offer
 
-After completing Passes 1-3, if the user wants further compression, offer Pass 4 with this explanation:
+After completing earlier passes, if the user wants further compression:
 
 "Pass 4 rewrites everything in ultra-dry telegram style — fragments instead of sentences, no bridge phrases, maximum density. It typically cuts an additional 25-40% on top of Pass 1-3. The result reads like shorthand notes, not prose — but modern LLMs parse it with full fidelity. Want me to proceed?"
 
-Only apply Pass 4 after receiving explicit user confirmation.
-
-### The Telegram Style
+### Style Rules
 
 Core principle: every word must carry information. If a word exists only to make text flow nicely for a human reader, it gets cut. LLMs reconstruct meaning from context without grammatical scaffolding.
 
-#### 18. Eliminate Bridge Phrases and Connective Tissue
+- Drop bridge phrases and connective tissue ("this means that", "which allows", "in order to", "it's important to note that")
+- Prefer semicolon-delimited fragments over full sentences
+- Drop articles (a, an, the) and "is/are/will be" where meaning is clear from context
+- Drop obvious subjects when the section heading provides context
+- Use compact notation: slashes for options (immediate/batched/silent), arrows for flow (offline -> local queue -> sync), dashes for ranges (3-5), colons for relationships (Auth: JWT + refresh)
+- Keep proper nouns, numbers, URLs, file paths, field names, and section numbers exact
+- Add a few words back if a fragment could be interpreted two ways — precision beats brevity
 
-Remove words that connect ideas for human readability but carry zero information:
+### Key Examples
+
+Bridge phrase removal:
 
 Before: "This means that the user will be able to access their data from any device,
 which is important because it enables a seamless cross-platform experience."
 
 After: "User data accessible from any device; enables cross-platform experience."
 
-Common bridge phrases to eliminate: "this means that", "which allows", "in order to", "the reason for this is", "it's important to note that", "as mentioned earlier", "for example", "in other words", "what this enables is", "the benefit of this approach is".
-
-#### 19. Convert Prose to Semicolon-Delimited Fragments
-
-Full sentences become comma or semicolon-separated key-value fragments. Drop articles (a, an, the), drop "is/are/will be" where meaning is clear from context, drop "users can" padding.
+Prose to fragments:
 
 Before: "The application uses a local-first architecture where all data is stored
 on the device. This ensures the app works offline and provides instant response
@@ -298,169 +254,55 @@ times. Cloud sync happens in the background when connectivity is available."
 After: "Local-first architecture; all data on-device; works offline, instant
 response; background cloud sync when connected."
 
-#### 20. Collapse Multi-Sentence Explanations
+See [references/techniques.md](references/techniques.md) for the complete set of telegram techniques with additional examples.
 
-When a paragraph uses 3-5 sentences to explain one concept, collapse to the essential fact:
-
-Before: "The notification system is designed to be non-intrusive. Rather than
-bombarding users with alerts, it uses a gentle reminder approach. Notifications
-are batched and delivered at user-preferred times. Users can customize their
-preferences, choosing between immediate, batched, or silent modes."
-
-After: "Notifications: non-intrusive, batched at user-preferred times; modes:
-immediate/batched/silent, configurable in settings."
-
-#### 21. Drop Implied Subjects and Obvious Context
-
-When the subject is obvious from the section heading or context, don't repeat it:
-
-Section: "8.3 Search Feature"
-
-Before: "The search feature supports full-text search across all captured items.
-The search feature also supports filtering by content type, date range, and tags."
-
-After: "Full-text across all items; filter by type/date/tags; results list
-with relevance ranking."
-
-#### 22. Use Compact Notation Patterns
-
-Adopt shorthand patterns that LLMs parse effortlessly:
-
-- Lists of options: use slashes — "immediate/batched/silent" not "immediate, batched, or silent"
-- Conditional logic: use arrows — "offline -> local queue -> sync on reconnect"
-- Ranges: use dashes — "3-5 items" not "three to five items"
-- Relationships: use colons — "Auth: JWT + refresh tokens" not "Authentication uses JWT with refresh tokens"
-- Enumerations: use parenthetical lists — "contentType (schedule/reminder/expense/article/note)"
-
-#### 23. Compress Repetitive Structural Patterns
-
-When the document describes many similar items (features, screens, API endpoints), establish the pattern once, then use shorthand:
-
-Before (5 paragraphs, each describing a screen):
-"The Timeline screen displays a chronological list of all captured items.
-At the top is a date filter bar. Each item shows a thumbnail, title, and
-timestamp. Users can tap to view details or swipe to delete..."
-
-After:
-"Screen pattern: header component + scrollable list + item cards with actions.
-
-Timeline: date filter bar; cards show thumbnail/title/timestamp; tap->detail, swipe->delete.
-Search: search bar with real-time filter; cards show title/preview/relevance."
-
-### Pass 4 Execution
-
-Pass 4 is a full document rewrite (not section-by-section like earlier passes):
+### Execution
 
 1. Read the entire post-Pass-3 document to understand all content and cross-references.
 2. Rewrite section by section, applying all telegram techniques simultaneously.
-3. Preserve all section/subsection numbers exactly.
-4. Preserve all cross-references.
-5. Preserve all proper nouns, technical terms, field names, enum values, URLs, and numbers exactly.
-6. After rewriting, verify word count reduction and spot-check 5-10 sections against pre-Pass-4 version to confirm zero information loss.
+3. Preserve all section/subsection numbers, cross-references, proper nouns, field names, enum values, URLs, and numbers exactly.
+4. After rewriting, verify word count reduction and spot-check 5-10 sections against pre-Pass-4 version to confirm zero information loss.
 
-### Pass 4 Quality Check
+### Quality Check
 
 Verify:
 - All section/subsection numbers survived
 - All cross-references still point to valid sections
 - No facts, specs, numbers, or names were lost
-- The document is parseable — fragments are unambiguous even without full sentences
+- Fragments are unambiguous even without full sentences
 - Any modern LLM would produce identical code and architecture decisions from this version as from the original
-
-When compressing, if a fragment could be parsed two ways, add 1-2 words to disambiguate. Precision always beats brevity.
 
 ## Edge Cases
 
-- **Short documents (under 1,000 words):** Warn the user that compression savings will be minimal. Offer to proceed but set expectations — Pass 1 might save 50-100 words, Passes 2-3 may find nothing worth compressing.
-- **Code-heavy prompts (>50% code):** Technique 4 (code compression) should be more conservative. Preserve Python/YAML/Makefile code blocks verbatim — whitespace is semantic in these languages. Only compress code that uses braces/indentation for purely syntactic structure (Swift, JSON, TypeScript).
-- **Already-compressed input:** Check for compression indicators: no Markdown, telegram-style fragments, semicolon-delimited lists. If the document looks pre-compressed, report diminishing returns and offer to spot-check rather than run full passes.
-- **Non-English prompts:** Word count is approximate for CJK languages. Report character count alongside word count. Compression techniques still apply — bridge phrases, redundancy, and motivational prose exist in every language.
-- **Embedded URLs and file paths:** Default to keeping ALL URLs and file paths intact. In system prompts, these are almost always critical (API endpoints, config locations, documentation references). Only strip the Markdown link syntax `[text](url)`, never the URL itself.
-- **Pass skipping:** Pass 1 is always required. Passes 2, 3, and 4 can each be skipped independently. If the user says "skip to Pass N," always apply Pass 1 first (required), then jump to the requested pass.
-- **Mixed-language documents:** Many system prompts mix English prose with non-English content (CJK product names, localization strings, multilingual examples). Preserve non-English content verbatim — compress the English scaffolding around it, not the embedded content itself.
-- **Documents about Markdown itself:** If the input teaches or references Markdown syntax (e.g., a Markdown tutorial, a skill that instructs an AI to emit Markdown), treat literal Markdown syntax inside examples and instructional passages as semantic content. Only strip Markdown used for the document's own formatting.
-- **Non-Markdown uses of Markdown characters:** Hash in hex colors (#FF0000), asterisks in regex or glob patterns (*.txt), pipes in truth tables or shell commands — scan for these before stripping. If `#` is followed by a hex digit, `**` appears inside a regex/glob context, or `|` appears in non-table contexts (boolean expressions, shell pipes), preserve them. When uncertain, preserve.
-- **Creative writing or legal prose:** This skill is designed for AI instruction documents, not prose where specific word choices carry meaning. If the input is fiction, legal text, or similar, warn the user and offer Pass 1 only if they confirm.
-- **Very large documents (exceeding context window):** Process in chunks by top-level section. Apply Pass 1 to each chunk independently, then reassemble before Passes 2-4 (which need full-document context for deduplication). Warn the user that cross-chunk deduplication may be incomplete.
-- **Rollback:** Keep a backup before each pass. If the user wants to undo a pass, restore from the previous backup rather than trying to reverse individual edits.
+- **Short documents (under 1,000 words):** Warn that savings will be minimal. Pass 1 might save 50-100 words; Passes 2-3 may find nothing worth compressing.
+- **Code-heavy prompts (>50% code):** Code compression should be more conservative. Preserve Python/YAML/Makefile code blocks verbatim — whitespace is semantic. Only compress code with braces/indentation for purely syntactic structure (Swift, JSON, TypeScript).
+- **Already-compressed input:** Check for compression indicators: no Markdown, telegram-style fragments, semicolon-delimited lists. Report diminishing returns and offer to spot-check rather than run full passes.
+- **Non-English prompts:** Word count is approximate for CJK languages. Report character count alongside word count. Compression techniques still apply — bridge phrases, redundancy, and motivational prose exist in every language. Token estimation: words × 1.3 for English, × 2.5 for CJK.
+- **Embedded URLs and file paths:** Keep ALL URLs and file paths intact. In system prompts, these are almost always critical. Only strip the Markdown link syntax `[text](url)`, never the URL itself.
+- **Pass skipping:** Pass 1 is always required. Passes 2, 3, and 4 can each be skipped independently. If the user says "skip to Pass N," apply Pass 1 first (required), then jump to the requested pass.
+- **Mixed-language documents:** Preserve non-English content verbatim — compress the English scaffolding around it, not the embedded content itself.
+- **Documents about Markdown:** Treat literal Markdown syntax inside examples and instructional passages as semantic content. Only strip Markdown used for the document's own formatting.
+- **Non-Markdown uses of Markdown characters:** Hash in hex colors (#FF0000), asterisks in regex or globs (*.txt), pipes in truth tables or shell commands — scan for these before stripping. When uncertain, preserve.
+- **Creative writing or legal prose:** Warn the user and offer Pass 1 only if they confirm.
+- **Very large documents (exceeding context window):** Process in chunks by top-level section. Apply Pass 1 to each chunk independently, then reassemble before Passes 2-4 (which need full-document context for deduplication).
+- **Rollback:** Keep a backup before each pass. Restore from backup rather than trying to reverse individual edits.
 
-## Execution Workflow
+## Operating Sequence
 
-### Step 1: Baseline Measurement
+1. Measure baseline: lines, words, estimated tokens (words × 1.3 for English, × 2.5 for CJK). For mixed-language text, report character count too.
+2. Copy to working file. Never edit the original in place.
+3. Apply Pass 1. Report results.
+4. Propose Pass 2 candidates grouped by type, with estimated savings per item.
+5. Apply only user-approved items. Re-measure and report the Strict Lossless result.
+6. If the user wants more: propose Pass 3 candidates. Apply only approved items. Report.
+7. If the user wants maximum compression: offer Pass 4 per the "When to Offer" section. Back up before rewriting. Report.
+8. Deliver final summary table with all stages.
 
-Before any edits, measure the starting document. Count lines, words, and estimate tokens (rough heuristic: tokens ≈ words × 1.3 for English, × 2.5 for CJK). Save these numbers for reporting at each stage.
+If the user only wants analysis or an audit, inspect and propose changes without rewriting.
 
-### Step 2: Copy to Working File
+## Final Reporting
 
-Never edit the original. Copy to a working file.
-
-### Step 3: Apply Pass 1 (Mechanical — automatic)
-
-Apply all Markdown stripping transformations. No user approval needed.
-
-After Pass 1, report:
-"Pass 1 complete: X words -> Y words (Z% reduction). All Markdown formatting removed. No content deleted."
-
-CRITICAL: Verify all section/subsection numbers survived. Compare against the catalog built before Pass 1. If any were stripped, restore immediately.
-
-### Step 4: Propose Pass 2 Optimizations
-
-Read the entire document. For each optimization opportunity, note:
-- Type (dedup, code compress, JSON compress, section cut, motivational, rationale, use cases, ASCII art)
-- Exact location (section number, line range)
-- What you'd change
-- Estimated word savings
-
-Present as a numbered list, grouped by type for easy review:
-1. [Dedup] S6 pricing "3% of monthly revenue" repeated in 4 locations.
-   Keep canonical in S6, replace others with "per S6". Saves ~40 words.
-2. [Code compress] S8.7.1 struct definition (28 lines).
-   Replace with 2-line inline description. Saves ~150 words.
-
-On large documents (30+ proposals), batch into groups of 5-10 by type so the user can approve categories at a time rather than individually.
-
-### Step 5: Get User Approval for Pass 2
-
-Wait for per-item approval. Users may approve some and reject others.
-
-### Step 6: Apply Approved Pass 2 Optimizations
-
-Work through approved items. Re-measure and report.
-
-### Step 7: Propose Pass 3 Optimizations
-
-Read the entire document with fresh eyes, looking for human-only content per Pass 3 categories (tutorials, practice prompts, scheduling, coaching, validation tables, competitive tables, workflow examples).
-
-For each candidate, note:
-- Category (tutorial, coaching, scheduling, validation, competitive, workflow example)
-- Exact location
-- Proposed action: REMOVE (entirely human-only) or COMPRESS (has useful context buried in human prose)
-- If COMPRESS: show before/after
-- Estimated word savings
-
-Group by category for easy review.
-
-### Step 8: Get User Approval for Pass 3
-
-Wait for per-item approval. Users may be protective of some sections. Respect that.
-
-### Step 9: Apply Approved Pass 3 Optimizations
-
-Apply all approved items. Re-measure.
-
-### Step 10: Offer Pass 4 (Optional)
-
-After reporting Pass 3 results, offer Pass 4 per the "When to Offer Pass 4" section above. Only proceed with explicit user confirmation.
-
-### Step 11: Apply Pass 4 (if approved)
-
-1. Back up the current working file.
-2. Rewrite the entire document in telegram style per Pass 4 techniques.
-3. Report: "Pass 4 complete: X words -> Y words (Z% additional reduction). Total from original: W%."
-
-### Step 12: Final Measurement and Verification
-
-Report a summary table:
+Always finish with a summary table:
 
 Stage; Words; Est. Tokens; Reduction
 Original; 37,237; ~48,400; -
@@ -469,27 +311,27 @@ After Pass 2; 31,126; ~40,500; 16%
 After Pass 3; 25,730; ~33,400; 31%
 After Pass 4; 16,200; ~21,100; 56%
 
-Run final verification:
-- Search for remaining Markdown syntax
-- Spot-check 3-5 compressed sections to ensure no spec information was lost
-- Confirm all cross-references still point to valid sections
-- For Pass 4: verify all section/subsection numbers survived
+Also report:
+- Mode delivered: Strict Lossless, AI-Lossless, or AI-Only
+- What was approved vs skipped
+- Whether any sections were preserved due to ambiguity risk
+- Whether the final output is still human-friendly or now AI-only
 
 ## Rules
 
-1. Never delete spec information. If in doubt, keep it. A few extra tokens are cheaper than a missing detail that causes the AI to hallucinate.
-2. Never touch section/subsection numbering. Section numbers are cross-reference anchors, not formatting. When deleting sections in Pass 2/3, keep original numbering — never renumber.
-3. Preserve all blank lines between sections. They cost almost nothing and help AI attention.
+1. Never delete spec information. A few extra tokens are cheaper than a missing detail that causes the AI to hallucinate.
+2. Never touch section/subsection numbering. When deleting sections in Pass 2/3, keep original numbers — never renumber.
+3. Preserve blank lines between sections. They cost almost nothing and help AI attention.
 4. Don't reorder sections. The document's structure is intentional. Compress in-place.
-5. In Passes 1-3, don't use lossy abbreviations like "dev" for "development" — these save 3-4 characters but reduce clarity. Pass 4 permits fragment-style compression and common technical abbreviations (dev, config, auth, impl, etc.) that would be inappropriate in earlier passes.
-6. Pass 1 is automatic. Pass 2 and 3 require approval. Always present proposals and wait for per-item approval.
-7. Pass 4 requires explicit user permission. Never apply without the user clearly saying yes. By default, offer after Pass 3 is complete. If the user requests skipping passes, follow Edge Cases guidance. Always back up pre-Pass-4 version.
+5. In Passes 1-3, don't use lossy abbreviations like "dev" for "development" — saves 3-4 characters but reduces clarity. Pass 4 permits common technical abbreviations (dev, config, auth, impl, etc.).
+6. Pass 1 is automatic. Pass 2 and 3 require approval. Always present proposals and wait.
+7. Pass 4 requires explicit user permission. Always back up the pre-Pass-4 version.
 8. Work section by section. Systematic work catches more and makes fewer mistakes.
-9. Measure at every stage. Report word count and estimated token reduction with percentages after each pass.
+9. Measure at every stage. Report word count and estimated token reduction with percentages.
 10. Pass 3 is optional. If the user only wants truly lossless compression, stop after Pass 2.
-11. Precision over brevity in Pass 4. If a telegram fragment is ambiguous, add words to make it precise. Maximum compression at zero fidelity cost, not absolute minimum word count.
+11. Precision over brevity in Pass 4. If a telegram fragment is ambiguous, add words. Maximum compression at zero fidelity cost.
 
-## Expected Results
+## Expected Savings
 
 Typical compression ratios on product specs and master plans:
 
@@ -499,9 +341,17 @@ Typical compression ratios on product specs and master plans:
 - Pass 4 (ultra-dry telegram rewrite): additional 25-40% on top of Pass 1-3
 - Total (all 4 passes): 50-65% reduction
 
+On a 35,000-word document, Passes 1-3 save 10,000-17,000 words. Adding Pass 4 can bring the total down to 12,000-17,000 words — roughly 25,000-32,000 fewer tokens per API call.
+
+Do not promise these numbers on already-lean inputs.
+
 ## Compatibility
 
-Works with any modern instruction-tuned LLM with 8K+ context (Claude, GPT, Codex, Gemini, Llama, Mistral, DeepSeek, and others). The telegram-style output from Pass 4 produces identical behavior across model families — all modern LLMs handle semicolon-delimited fragments, arrow notation, and slash-separated options without degradation.
+Works with any modern instruction-tuned LLM with 8K+ context. The telegram-style output from Pass 4 produces identical behavior across model families — all modern LLMs handle semicolon-delimited fragments, arrow notation, and slash-separated options without degradation.
+
+## Reference Files
+
+- [references/techniques.md](references/techniques.md): complete technique catalog with before/after examples for all 23 numbered techniques across all four passes
 
 Author: Wallny
 https://github.com/wallmage
