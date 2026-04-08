@@ -1,14 +1,16 @@
 # Lossless Prompt Compressor
 
-Compression for AI instruction docs, rule files, planning docs, and product specs.
+[English](README.md) | [中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Italiano](README.it.md) | [Português](README.pt-BR.md)
 
-This is compression, not summarization: the skill preserves machine-relevant facts while cutting formatting overhead, redundancy, human-only scaffolding, and optionally rewriting into ultra-dense AI-only shorthand.
+Compress AI instruction docs, rule files, planning docs, and product specs. No facts lost.
+
+This is compression, not summarization. Machine-relevant facts stay; formatting overhead, redundancy, and human-only scaffolding get cut. Optionally rewrites into ultra-dense AI-only shorthand.
 
 ## Modes
 
-- **Strict Lossless** (default): Pass 1 (mechanical cleanup) + approved Pass 2 edits (fact-preserving compression). Every fact survives. Document stays human-readable.
-- **AI-Lossless**: Pass 3 on top of Strict Lossless. Removes human-only content (tutorials, coaching, schedules) while preserving everything the AI needs.
-- **AI-Only**: Pass 4 on top of earlier passes. Full telegram-style rewrite for maximum density.
+- **Strict Lossless** (default): Mechanical cleanup (Pass 1) plus approved fact-preserving edits (Pass 2). Every fact survives. Still human-readable.
+- **AI-Lossless**: Adds Pass 3. Strips tutorials, coaching, schedules — anything only a human would read.
+- **AI-Only**: Adds Pass 4. Full telegram-style rewrite for maximum density.
 
 ## Workflow
 
@@ -19,15 +21,15 @@ This is compression, not summarization: the skill preserves machine-relevant fac
 | 3 | Human-only content removal | Per-item | +15-25% |
 | 4 | Telegram rewrite | Explicit opt-in | +25-40% |
 
-Think of it as four levels: Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 removes the instruction manual only a human would read. Pass 4 converts everything to shorthand.
+Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 drops the instruction manual only a human needs. Pass 4 converts everything to shorthand.
 
 ## Design
 
-- Strict lossless by default — compression, not summarization
-- Section-number-safe — cross-reference anchors are never renumbered
-- Approval-gated — every non-mechanical edit requires user sign-off
-- 23 numbered techniques — full catalog in `references/techniques.md` with before/after examples
-- 12 edge cases — from code-heavy prompts to mixed-language documents
+- Strict lossless by default: compression, not summarization
+- Section-number-safe: cross-reference anchors never get renumbered
+- Approval-gated: every non-mechanical edit needs user sign-off
+- 23 numbered techniques with before/after examples in `references/techniques.md`
+- 12 edge cases covering code-heavy prompts to mixed-language documents
 
 ## Structure
 

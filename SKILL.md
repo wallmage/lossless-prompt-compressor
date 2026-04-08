@@ -5,9 +5,9 @@ description: "Compress AI instruction documents, rule files, planning docs, prod
 
 # Lossless Prompt Compressor
 
-Compress AI-facing documents without deleting information the model needs to do good work.
+Compress AI-facing documents without losing information the model needs to follow instructions accurately.
 
-Four-pass process with increasing aggressiveness. Think of it as four levels: Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 removes the instruction manual only a human would read. Pass 4 converts everything to shorthand — every word earns its place or it's gone.
+Four-pass process with increasing aggressiveness. Think of it as four levels: Pass 1 removes packaging. Pass 2 vacuum-seals. Pass 3 removes the instruction manual only a human would read. Pass 4 converts everything to shorthand — nothing survives unless it carries meaning.
 
 ## Modes
 

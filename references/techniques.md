@@ -1,6 +1,6 @@
 # Lossless Prompt Compressor — Technique Catalog
 
-Read this after SKILL.md. Use it as a diagnostic menu when applying each pass — not every technique will apply to every document. Before/after pairs are teaching examples showing good compression patterns.
+Read this after SKILL.md. Use it as a diagnostic menu when applying each pass — not every technique will apply to every document. Before/after pairs show what good compression looks like.
 
 ## Pass 1 Techniques (Mechanical — automatic)
 
